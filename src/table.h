@@ -7,8 +7,8 @@
 typedef struct
 {
     uint32_t id;
-    char username[COLUMN_USERNAME_SIZE];
-    char email[COLUMN_EMAIL_SIZE];
+    char username[COLUMN_USERNAME_SIZE + 1]; // +1 for null terminator
+    char email[COLUMN_EMAIL_SIZE + 1];       // +1 for null terminator
 } Row;
 
 const uint32_t ID_SIZE = size_of_attribute(Row, id);

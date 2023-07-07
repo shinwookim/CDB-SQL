@@ -25,6 +25,8 @@ typedef enum
 {
     PREPARE_SUCCESS,
     PREPARE_SYNTAX_ERROR,
+    PREPARE_STRING_TOO_LONG,
+    PREPARE_NEGATIVE_ID,
     PREPARE_UNRECOGNIZED_STATEMENT
 } PrepareResult;
 
@@ -128,15 +130,32 @@ void free_table(Table *table)
     free(table);
 }
 
+PrepareResult prepare_insert(InputBuffer *input_buffer, Statement *statement)
+{
+    statement->type = STATEMENT_INSERT;                // statement looks like `insert 1 user1 person1@example.com`
+    char *keyword = strtok(input_buffer->buffer, " "); // gets `insert`
+    char *id_string = strtok(NULL, " ");               // gets `1`
+    char *username = strtok(NULL, " ");                // gets `user1`
+    char *email = strtok(NULL, " ");                   // gets `person1@example.com`
+    if (!id_string || !username || !email)             // check for syntax error
+        return PREPARE_SYNTAX_ERROR;
+    if (strlen(username) > COLUMN_USERNAME_SIZE || strlen(email) > COLUMN_EMAIL_SIZE) // check to ensure input within bounds
+        return PREPARE_STRING_TOO_LONG;
+    int id = atoi(id_string); // parse stringified ID
+    if (id < 0)
+        return PREPARE_NEGATIVE_ID;
+    statement->row_to_insert.id = id;
+    strcpy(statement->row_to_insert.username, username);
+    strcpy(statement->row_to_insert.email, email);
+    return PREPARE_SUCCESS;
+}
+
 PrepareResult prepare_statement(InputBuffer *input_buffer, Statement *statement)
 {
     if (strncmp(input_buffer->buffer, "insert", 6) == 0)
     {
-        statement->type = STATEMENT_INSERT;
-        int args_assigned = sscanf(input_buffer->buffer, "insert %d %s %s", &(statement->row_to_insert.id), statement->row_to_insert.username, statement->row_to_insert.email);
-        if (args_assigned < 3)
-            return PREPARE_SYNTAX_ERROR;
-        return PREPARE_SUCCESS;
+
+        return prepare_insert(input_buffer, statement);
     }
     if (strcmp(input_buffer->buffer, "select") == 0)
     {
@@ -209,6 +228,12 @@ int main(int argc, char *arg[])
             break;
         case (PREPARE_SYNTAX_ERROR):
             printf("Syntax error. Could not parse statement.\n");
+            continue;
+        case (PREPARE_STRING_TOO_LONG):
+            printf("String is too long.\n");
+            continue;
+        case (PREPARE_NEGATIVE_ID):
+            printf("ID must be positive.\n");
             continue;
         case (PREPARE_UNRECOGNIZED_STATEMENT):
             printf("Unrecognized keyword at start of '%s'.\n", input_buffer->buffer);

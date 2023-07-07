@@ -24,7 +24,7 @@ DBSQL.o: ${SRC_DIR}DBSQL.c
 	$(CC) $(FLAGS) ${SRC_DIR}DBSQL.c -o ${OUT_DIR}DBSQL.o
 
 test: all
-	/usr/local/bin/bundle exec rspec
+	bundle exec rspec
 
 run: all
 	${OUT_DIR}$(OUT)
