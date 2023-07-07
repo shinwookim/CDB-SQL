@@ -1,33 +1,34 @@
-MKDIR_P = mkdir -p
-OUT_DIR = bin/
-SRC_DIR = src/
-
-OBJS	= DBSQL.o
-SOURCE	= DBSQL.c
-OUT	= db
+SRC_DIR := src
+OBJ_DIR := obj
+BIN_DIR := bin
+OUT	:= db
+EXE := $(BIN_DIR)/$(OUT)
+SRC := $(wildcard $(SRC_DIR)/*.c)
+OBJ := $(SRC:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
 CC	 = gcc
-FLAGS	 = -g -c -Wall
+CFLAGS   := -g -c -Wall
 
-.PHONY: directories
-.PHONY: clean
+.PHONY: all clean
 
-all: directories $(OBJS)
-	$(CC) -g ${OUT_DIR}$(OBJS) -o ${OUT_DIR}$(OUT)
+all: $(EXE)
 
-directories: ${OUT_DIR}
+$(EXE): $(OBJ) | $(BIN_DIR)
+	$(CC)  $^ $(LDLIBS) -o $@
 
-${OUT_DIR}:
-	${MKDIR_P} ${OUT_DIR}
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+	$(CC)  $(CFLAGS) -c $< -o $@
 
-DBSQL.o: ${SRC_DIR}DBSQL.c
-	$(CC) $(FLAGS) ${SRC_DIR}DBSQL.c -o ${OUT_DIR}DBSQL.o
+$(BIN_DIR) $(OBJ_DIR):
+	mkdir -p $@
 
-test: all
+run: $(EXE)
+	$(EXE)
+
+test: $(EXE)
 	bundle exec rspec
 
-run: all
-	${OUT_DIR}$(OUT)
-
 clean:
-	rm -f ${OUT_DIR}$(OBJS) ${OUT_DIR}$(OUT)
+	@$(RM) -rv $(BIN_DIR) $(OBJ_DIR)
+-include $(OBJ:.o=.d)
+
